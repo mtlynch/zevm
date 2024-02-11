@@ -95,12 +95,12 @@ pub const Interpreter = struct {
     }
     fn programCounter(self: This) usize {
         // Subtraction of pointers is safe here
-        const inst = @ptrCast(*u8, self.inst);
-        return @ptrToInt(self.bytecode.ptr - inst.*);
+        const inst = @as(*u8, @ptrCast(self.inst));
+        return @intFromPtr(self.bytecode.ptr - inst.*);
     }
     fn runLoop(self: *This) !void {
         while (self.inst_result == Status.Continue) {
-            const op = @ptrCast(*u8, self.inst);
+            const op = @as(*u8, @ptrCast(self.inst));
             std.debug.print("Running 0x{x}\n", .{op.*});
             try self.eval(op.*);
             self.stack.print();
@@ -114,7 +114,7 @@ pub const Interpreter = struct {
     }
     fn pushN(self: *This, comptime n: u8) !void {
         self.subGas(gas.VERYLOW);
-        const start = @ptrCast(*u8, self.inst + n);
+        const start = @as(*u8, @ptrCast(self.inst + n));
         var x = @as(u256, start.*);
         try self.stack.push(x);
         self.inst += n;
@@ -340,14 +340,14 @@ pub const Interpreter = struct {
                 self.subGas(gas.LOW);
                 var a = self.stack.pop();
                 var b = self.stack.pop();
-                const rhs = @truncate(u8, b);
+                const rhs = @as(u8, @truncate(b));
                 try self.stack.push(a << rhs);
             },
             opcode.SHR => {
                 self.subGas(gas.LOW);
                 var a = self.stack.pop();
                 var b = self.stack.pop();
-                const rhs = @truncate(u8, b);
+                const rhs = @as(u8, @truncate(b));
                 try self.stack.push(a >> rhs);
             },
             opcode.SAR => {},
@@ -376,7 +376,7 @@ pub const Interpreter = struct {
                 // TODO: Charge host functions depending on cold results.
                 self.subGas(gas.HIGH);
                 var a = self.stack.pop();
-                const addr = @truncate(u160, a);
+                const addr = @as(u160, @truncate(a));
                 const result = try self.eth_host.balance(addr);
                 const balance = if (result) |r|
                     r.data
